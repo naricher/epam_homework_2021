@@ -1,0 +1,34 @@
+FROM centos:7
+USER root
+RUN yum -y update && yum -y install java-1.8.0-openjdk.x86_64 openssh-server java-1.8.0-openjdk-devel net-tools
+RUN curl -O https://archive.apache.org/dist/hadoop/common/hadoop-3.1.2/hadoop-3.1.2.tar.gz && \
+tar -C /opt/  -xvzf hadoop-3.1.2.tar.gz && \
+mkdir /usr/local/hadoop/ && \
+ln -s /opt/hadoop-3.1.2 /usr/local/hadoop/current && \
+rm hadoop-3.1.2.tar.gz
+
+ENV HADOOP_HOME=/usr/local/hadoop/current
+
+RUN ssh-keygen -t rsa -f ~/.ssh/id_rsa -P '' && \
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+VOLUME /opt/datanode-dir
+
+RUN cd /usr/local/hadoop/current/etc/hadoop/ && \
+curl -O https://gist.githubusercontent.com/rdaadr/2f42f248f02aeda18105805493bb0e9b/raw/6303e424373b3459bcf3720b253c01373666fe7c/hadoop-env.sh && \
+sed -i 's/export JAVA_HOME=.*/export JAVA_HOME=\/usr\/lib\/jvm\/jre-1.8.0-openjdk-1.8.0.282.b08-1.el7_9.x86_64/' hadoop-env.sh && \
+sed -i 's/export HADOOP_HOME=.*/export HADOOP_HOME=\/usr\/local\/hadoop\/current/' hadoop-env.sh && \
+sed -i 's/export HADOOP_HEAPSIZE_MAX=.*/export HADOOP_HEAPSIZE_MAX=512/' hadoop-env.sh && \
+curl -O https://gist.githubusercontent.com/rdaadr/2bedf24fd2721bad276e416b57d63e38/raw/640ee95adafa31a70869b54767104b826964af48/hdfs-site.xml && \
+sed -i 's/%NAMENODE_DIRS%/\/opt\/namenode-dir/' hdfs-site.xml && \
+sed -i 's/%DATANODE_DIRS%/\/opt\/datanode-dir/' hdfs-site.xml && \
+curl -O https://gist.githubusercontent.com/rdaadr/64b9abd1700e15f04147ea48bc72b3c7/raw/2d416bf137cba81b107508153621ee548e2c877d/core-site.xml && \
+sed -i  's/%HDFS_NAMENODE_HOSTNAME%/hadoop-master/' core-site.xml
+RUN mkdir -p $HADOOP_HOME/logs && \
+chmod 775 /usr/local/hadoop/current/logs
+
+ADD run-slave.sh /run.sh
+RUN chmod a+x /run.sh
+ENTRYPOINT /run.sh
+WORKDIR $HADOOP_HOME
+CMD /bin/bash
