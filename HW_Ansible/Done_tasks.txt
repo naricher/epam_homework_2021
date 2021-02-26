@@ -1,0 +1,262 @@
+1. have >=3 vms
+2. on one of them install ansible and create a user
+[stud@localhost ~]$ sudo yum install epel-release
+[stud@localhost ~]$ sudo yum install ansible
+[stud@localhost ~]$ ansible localhost -m user -a "name=hw_ansible group=wheel"
+localhost | SUCCESS => {
+    "append": false, 
+    "changed": false, 
+    "comment": "", 
+    "group": 10, 
+    "home": "/home/hw_ansible", 
+    "move_home": false, 
+    "name": "hw_ansible", 
+    "shell": "/bin/bash", 
+    "state": "present", 
+    "uid": 1013
+}
+3. using ansible ad-hoc create the same user on the rest of machines, setup ssh keys and sudo for that user
+
+[stud@localhost ~]$ vi /etc/ansible/hosts 
+#Add this line
+usera ansible_host=192.168.56.102
+userb ansible_host=192.168.56.200
+userc ansible_host=192.168.56.106
+
+#Copy ssh key
+[hw_ansible@localhost ~]$ ssh-keygen
+[hw_ansible@localhost ~]$ ssh-copy-id exam@192.168.56.106
+[hw_ansible@localhost ~]$ ssh-copy-id student@192.168.56.200
+[hw_ansible@localhost ~]$ ssh-copy-id hw_ansible@1ocalhost
+
+[hw_ansible@localhost .ssh]$ cat id_rsa.pub 
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcRWGYI/llwtDZH23R2uwiyIbIua9HUnEx+tuCs0Q1Ab+UEWbSlrjvGgaidEf4gXVPL4tnyHmQIT7ndnMIPDflp7PUibKBXDTN22uc8toDjp4dksGBpUm0l8a6WHQSaOpCVFFhFk0XcJ9UdUmkl4hw24eDjRRzAv6exEZR08pJ4hdvnlDXLC5jYRgA09Qi9L4GDAw4eFz7umYyXMq2q98vHnJno6+PkL1qGIg6BVUu0lHxxne/CtXyDSAeJRcmCZw/Nc8Y+SequwMaYr2XtoL+dEOoN2ZCuVkuajFBLnin7r5XZegrZ39ymtariAfNf5rPqvUwswHJGBKmqvICiTMn hw_ansible@localhost.localdomain
+
+[stud@localhost .ssh]$ ansible userc -m user -a "name=hw_ansible group=wheel generate_ssh_key=yes" -u exam --become
+
+userc | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": true, 
+    "comment": "", 
+    "create_home": true, 
+    "group": 10, 
+    "home": "/home/hw_ansible", 
+    "name": "hw_ansible", 
+    "shell": "/bin/bash", 
+    "ssh_fingerprint": "2048 SHA256:WIhPJxEWIFZ/OTvwE9gAOatT9NLR1W8zZIELa4Ym1Ug ansible-generated on localhost.localdomain (RSA)", 
+    "ssh_key_file": "/home/hw_ansible/.ssh/id_rsa", 
+    "ssh_public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDhc3SOFWMUG60k3RVTiN10wzQgk1AnZe66sfcPbdvSj6aRI08qzbB8H//nk9Jx+RvVfp/hhXaaQQCJW1bTohAZuhJY6m7in3AvHx1xQfxoNyP/UtsSgy2+hzPoDwEbiMal4i5sbYQOilTAwvWNdp/FRFAegOe64re33rrZvoIJWYXR+mzG7dD2Cr1qCGrsWo///Gmxew9Ga/d/KSoKKsAK6Qu8RJyT7I3fzCCTCCUZVuueIFYJCsvA39AMUrWXpS8bHMmclF7749+jGey0jHGfVH4kZDg5DaOphInW4tDJlmO4sUZRiZBjwqMwG3fO/dBCXBX+uNbvJ0ZXX5CipHaH ansible-generated on localhost.localdomain", 
+    "state": "present", 
+    "system": false, 
+    "uid": 1004
+}
+
+[stud@localhost .ssh]$ ansible userb -m user -a "name=hw_ansible group=wheel generate_ssh_key=yes" -u student --become -K
+BECOME password: 
+userb | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": true, 
+    "comment": "", 
+    "create_home": true, 
+    "group": 10, 
+    "home": "/home/hw_ansible", 
+    "name": "hw_ansible", 
+    "shell": "/bin/bash", 
+    "ssh_fingerprint": "2048 SHA256:V+IinVJetqmOprka9hNKDFkuWKI6OkljuxwT1bCUYPE ansible-generated on localhost.localdomain (RSA)", 
+    "ssh_key_file": "/home/hw_ansible/.ssh/id_rsa", 
+    "ssh_public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDXKIsWenaSuaZ7AxPCTdskRbPtXyblfLplSNDY/Rr5TYjvhLC6kviGyjwqa1AZaXrq1RSuGUDrSX0Np3wC6g7x2xgpY4W/tidK0iF+kR0JvtOKFwk8mRV1K25Pc87voFNk0Y+F0WSBWQMGHn1N7f7ut0mJxhDE8ArpJgAczXY+2Mk/2cXvEhKy5QCs9kMrVyOVDhLr5xs8fuwKlH0Zrzj0Q0FChqgS5OIAh++/JjnDTsYe67go80DTi7BQQkks6s4qRtLm4RKM8wJ+sU9ckKRRw33OsI54bXnQzGsgmkaM5bJlnskSOTH7XgLbgp+lB4cPwKq3gYqgT/DUF9aPYtHR ansible-generated on localhost.localdomain", 
+    "state": "present", 
+    "system": false, 
+    "uid": 1002
+}
+
+
+[hw_ansible@localhost .ssh]$ ansible userc -m authorized_key -a "user=hw_ansible key='ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcRWGYI/llwtDZH23R2uwiyIbIua9HUnEx+tuCs0Q1Ab+UEWbSlrjvGgaidEf4gXVPL4tnyHmQIT7ndnMIPDflp7PUibKBXDTN22uc8toDjp4dksGBpUm0l8a6WHQSaOpCVFFhFk0XcJ9UdUmkl4hw24eDjRRzAv6exEZR08pJ4hdvnlDXLC5jYRgA09Qi9L4GDAw4eFz7umYyXMq2q98vHnJno6+PkL1qGIg6BVUu0lHxxne/CtXyDSAeJRcmCZw/Nc8Y+SequwMaYr2XtoL+dEOoN2ZCuVkuajFBLnin7r5XZegrZ39ymtariAfNf5rPqvUwswHJGBKmqvICiTMn == hw_ansible@localhost.localdomain'" -u exam --become
+
+userc | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": true, 
+    "comment": null, 
+    "exclusive": false, 
+    "follow": false, 
+    "key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcRWGYI/llwtDZH23R2uwiyIbIua9HUnEx+tuCs0Q1Ab+UEWbSlrjvGgaidEf4gXVPL4tnyHmQIT7ndnMIPDflp7PUibKBXDTN22uc8toDjp4dksGBpUm0l8a6WHQSaOpCVFFhFk0XcJ9UdUmkl4hw24eDjRRzAv6exEZR08pJ4hdvnlDXLC5jYRgA09Qi9L4GDAw4eFz7umYyXMq2q98vHnJno6+PkL1qGIg6BVUu0lHxxne/CtXyDSAeJRcmCZw/Nc8Y+SequwMaYr2XtoL+dEOoN2ZCuVkuajFBLnin7r5XZegrZ39ymtariAfNf5rPqvUwswHJGBKmqvICiTMn == hw_ansible@localhost.localdomain", 
+    "key_options": null, 
+    "keyfile": "/home/hw_ansible/.ssh/authorized_keys", 
+    "manage_dir": true, 
+    "path": null, 
+    "state": "present", 
+    "user": "hw_ansible", 
+    "validate_certs": true
+
+
+[hw_ansible@localhost .ssh]$ ansible userb -m authorized_key -a "user=hw_ansible key='ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcRWGYI/llwtDZH23R2uwiyIbIua9HUnEx+tuCs0Q1Ab+UEWbSlrjvGgaidEf4gXVPL4tnyHmQIT7ndnMIPDflp7PUibKBXDTN22uc8toDjp4dksGBpUm0l8a6WHQSaOpCVFFhFk0XcJ9UdUmkl4hw24eDjRRzAv6exEZR08pJ4hdvnlDXLC5jYRgA09Qi9L4GDAw4eFz7umYyXMq2q98vHnJno6+PkL1qGIg6BVUu0lHxxne/CtXyDSAeJRcmCZw/Nc8Y+SequwMaYr2XtoL+dEOoN2ZCuVkuajFBLnin7r5XZegrZ39ymtariAfNf5rPqvUwswHJGBKmqvICiTMn == hw_ansible@localhost.localdomain'" -u student --become -K
+BECOME password: 
+userb | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": true, 
+    "comment": null, 
+    "exclusive": false, 
+    "follow": false, 
+    "key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcRWGYI/llwtDZH23R2uwiyIbIua9HUnEx+tuCs0Q1Ab+UEWbSlrjvGgaidEf4gXVPL4tnyHmQIT7ndnMIPDflp7PUibKBXDTN22uc8toDjp4dksGBpUm0l8a6WHQSaOpCVFFhFk0XcJ9UdUmkl4hw24eDjRRzAv6exEZR08pJ4hdvnlDXLC5jYRgA09Qi9L4GDAw4eFz7umYyXMq2q98vHnJno6+PkL1qGIg6BVUu0lHxxne/CtXyDSAeJRcmCZw/Nc8Y+SequwMaYr2XtoL+dEOoN2ZCuVkuajFBLnin7r5XZegrZ39ymtariAfNf5rPqvUwswHJGBKmqvICiTMn == hw_ansible@localhost.localdomain", 
+    "key_options": null, 
+    "keyfile": "/home/hw_ansible/.ssh/authorized_keys", 
+    "manage_dir": true, 
+    "path": null, 
+    "state": "present", 
+    "user": "hw_ansible", 
+    "validate_certs": true
+}
+#Check results
+[hw_ansible@localhost .ssh]$ ansible all -m ping
+userc | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": false, 
+    "ping": "pong"
+}
+userb | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": false, 
+    "ping": "pong"
+}
+usera| SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python"
+    }, 
+    "changed": false, 
+    "ping": "pong"
+}
+#No password aviable
+[hw_ansible@localhost ~]$ ansible usera -m shell -a 'echo "hw_ansible  ALL=(ALL)  NOPASSWD: ALL" >> /etc/sudoers' --become -K
+BECOME password: 
+usera | CHANGED | rc=0 >>
+[hw_ansible@localhost ~]$ ansible userb -m shell -a 'echo "hw_ansible  ALL=(ALL)  NOPASSWD: ALL" >> /etc/sudoers' -u student  --become -K
+BECOME password: 
+userb | CHANGED | rc=0 >>
+[hw_ansible@localhost ~]$ ansible userc -m shell -a 'echo "hw_ansible  ALL=(ALL)  NOPASSWD: ALL" >> /etc/sudoers' -u exam  --become -K
+BECOME password: 
+userc | CHANGED | rc=0 >>
+
+
+4. write a playbook that:
+- updates all packages on the systems
+- installs ntp, nginx and mysql
+- for ntp replaces default config with your own (you can find ntp servers on the internet)
+- for mysql creates user and database (using corresponding module)
+* for nginx creates directory /web and places there files for some test site (you can find them on the internet and you may want to fix nginx.conf appropriately)
+
+[hw_ansible@localhost ~]$ ansible-playbook task.yml 
+[WARNING]: While constructing a mapping from /home/hw_ansible/task.yml, line 6, column 5, found a duplicate dict key
+(yum). Using last defined value only.
+[WARNING]: While constructing a mapping from /home/hw_ansible/task.yml, line 23, column 5, found a duplicate dict key
+(yum). Using last defined value only.
+
+PLAY [task4] *************************************************************************************************************
+
+TASK [Gathering Facts] ***************************************************************************************************
+ok: [usera]
+ok: [userb]
+ok: [userc]
+
+TASK [updates all packages on the systems] *************************************
+ok: [userc]
+ok: [usera]
+ok: [userb]
+
+TASK [installs ntp, nginx and mysql] *************************************************************************************
+ok: [userb]
+ok: [usera]
+ok: [userc]
+
+TASK [for ntp replaces default config with your own] *********************************************************************
+ok: [userb]
+ok: [userc]
+ok: [usera]
+
+TASK [Download MySQL Community Repo] *************************************************************************************
+ok: [userb]
+ok: [usera]
+ok: [userc]
+
+TASK [Install MySQL Community Repo] **************************************************************************************
+[WARNING]: Consider using the yum, dnf or zypper module rather than running 'rpm'.  If you need to use command because
+yum, dnf or zypper is insufficient you can add 'warn: false' to this command task or set 'command_warnings=False' in
+ansible.cfg to get rid of this message.
+changed: [userc]
+changed: [userb]
+changed: [usera]
+
+TASK [Install MySQL Server] **********************************************************************************************
+ok: [userb]
+ok: [usera]
+ok: [userc]
+
+TASK [Start MySQL Server and enable it] **********************************************************************************
+ok: [usera]
+ok: [userb]
+ok: [userc]
+
+TASK [for mysql create user] *********************************************************************************************
+ok: [usera]
+ok: [userb]
+ok: [userc]
+
+TASK [for mysql create database] *****************************************************************************************
+ok: [userb]
+ok: [usera]
+ok: [userc]
+
+PLAY RECAP ***************************************************************************************************************
+usera                      : ok=10    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+userb                      : ok=10   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+userc                      : ok=10   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+f
+
+
+
+
+
+5. ** create a playbook that will setup a user as in the 2nd task
+
+[stud@localhost ~]$ vi create_user.yml
+---
+- name: create user
+  hosts: localhost
+  tasks:
+  - name: Add user to remote hosts
+    user:
+      name: hw_ansible
+      shell: /bin/bash
+      createhome: yes
+      home: /home/hw_ansible
+
+[stud@localhost ~]$ ansible-playbook create_user.yml
+
+PLAY [create user] *************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [localhost]
+
+TASK [Add user to remote hosts] ************************************************
+changed: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+[stud@localhost ~]$ 
+[stud@localhost ~]$ cat /etc/passwd | grep hw_ansible
+hw_ansible:x:1013:1013::/home/hw_ansible:/bin/bash
+
+
+

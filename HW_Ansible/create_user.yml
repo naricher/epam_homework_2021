@@ -1,0 +1,12 @@
+---
+- name: create user
+  hosts: localhost
+  tasks:
+  - name: Add user to remote hosts
+    user:
+      name: hw_ansible
+      shell: /bin/bash
+      createhome: yes
+      home: /home/hw_ansible
+
+
