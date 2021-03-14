@@ -1,0 +1,48 @@
+---
+- name: task4
+  hosts: all 
+  become: yes
+  tasks:  
+  - name: updates all packages on the systems
+    yum: name=* state=latest
+
+  - name: installs ntp and nginx
+    yum: 
+       name:
+       - epel-release
+       - ntp
+       - nginx 
+       state: latest
+
+  - name: for ntp replaces default config with your own
+    copy: src=/home/hw_ansible/ntp.conf dest=/etc/ntp.conf
+
+
+  - name: Download MySQL Community Repo
+    get_url: url=http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm dest=/tmp
+
+  - name: Install MySQL Community Repo
+    command: /usr/bin/rpm -ivh /tmp/mysql-community-release-el7-5.noarch.rpm
+    register: remi_mysql_repo_result
+    failed_when: '"conflict" in remi_mysql_repo_result.stderr'
+ 
+  - name: Install MySQL Server
+    yum:
+       name:
+       - mysql-server
+       - mysql
+       - MySQL-python 
+       state: latest
+ 
+  - name: Start MySQL Server and enable it
+    service: name=mysqld state=started 
+
+  - name: add var
+    include_vars:
+        file: pass.yml
+
+  - name: for mysql create user
+    community.mysql.mysql_user: login_user=root user=ansible1 password="{{ password }}" state=present login_unix_socket=/var/lib/mysql/mysql.sock
+
+  - name: for mysql create database
+    community.mysql.mysql_db: login_user=root db=data state=present
