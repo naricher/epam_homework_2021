@@ -149,18 +149,24 @@ BECOME password:
 userc | CHANGED | rc=0 >>
 
 
-4. write a playbook that:
+ playbook that:
 - updates all packages on the systems
 - installs ntp, nginx and mysql
 - for ntp replaces default config with your own (you can find ntp servers on the internet)
 - for mysql creates user and database (using corresponding module)
 * for nginx creates directory /web and places there files for some test site (you can find them on the internet and you may want to fix nginx.conf appropriately)
 
-[hw_ansible@localhost ~]$ ansible-playbook task.yml 
-[WARNING]: While constructing a mapping from /home/hw_ansible/task.yml, line 6, column 5, found a duplicate dict key
-(yum). Using last defined value only.
-[WARNING]: While constructing a mapping from /home/hw_ansible/task.yml, line 23, column 5, found a duplicate dict key
-(yum). Using last defined value only.
+#Ansible-vault before
+[hw_ansible@localhost ~]$  mkdir vars
+[hw_ansible@localhost ~]$ echo 123 > ~/vars/pass.yml
+[hw_ansible@localhost ~]$ ansible-vault encrypt vars/pass.yml
+New Vault password: 
+Confirm New Vault password: 
+Encryption successful
+[hw_ansible@localhost ~]$ echo 123 > ~/ansible_vault_pass.txt
+
+
+[hw_ansible@localhost ~]$ ansible-playbook task.yml --vault-password-file ansible_vault_pass.txt
 
 PLAY [task4] *************************************************************************************************************
 
@@ -174,7 +180,8 @@ ok: [userc]
 ok: [usera]
 ok: [userb]
 
-TASK [installs ntp, nginx and mysql] *************************************************************************************
+TASK [installs ntp and nginx]
+*************************************************************************************
 ok: [userb]
 ok: [usera]
 ok: [userc]
@@ -207,7 +214,12 @@ ok: [usera]
 ok: [userb]
 ok: [userc]
 
-TASK [for mysql create user] *********************************************************************************************
+TASK [add var] ******************************************************************************************************************************
+ok: [usera]
+
+TASK [for mysql create user] ****************************************************************************************************************
+[WARNING]: The value ******** (type int) in a string field was converted to u'********' (type string). If this does not look like what you
+expect, quote the entire value to ensure it does not change.
 ok: [usera]
 ok: [userb]
 ok: [userc]
@@ -218,10 +230,10 @@ ok: [usera]
 ok: [userc]
 
 PLAY RECAP ***************************************************************************************************************
-usera                      : ok=10    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-userb                      : ok=10   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-userc                      : ok=10   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-f
+usera                      : ok=11    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+userb                      : ok=11   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+userc                      : ok=11   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
 
 
 
@@ -257,6 +269,5 @@ localhost                  : ok=2    changed=1    unreachable=0    failed=0    s
 [stud@localhost ~]$ 
 [stud@localhost ~]$ cat /etc/passwd | grep hw_ansible
 hw_ansible:x:1013:1013::/home/hw_ansible:/bin/bash
-
 
 
